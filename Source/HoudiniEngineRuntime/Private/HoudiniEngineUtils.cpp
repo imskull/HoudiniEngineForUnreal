@@ -2382,7 +2382,8 @@ FHoudiniEngineUtils::HapiCreateInputNodeForLandscape(
     const bool& bExportMaterials, const bool& bExportGeometryAsMesh,
     const bool& bExportLighting, const bool& bExportNormalizedUVs,
     const bool& bExportTileUVs, const FBox& AssetBounds,
-    const bool& bExportAsHeighfield, const bool& bAutoSelectComponents )
+    const bool& bExportAsHeighfield, const bool& bAutoSelectComponents,
+	const bool& bLandscapeCommitManualMask)
 {
 #if WITH_EDITOR
 
@@ -2441,6 +2442,7 @@ FHoudiniEngineUtils::HapiCreateInputNodeForLandscape(
             SelectedComponents.Add( LandscapeComponent );
         }
     }
+
 
     //--------------------------------------------------------------------------------------------------
     // EXPORT TO HEIGHTFIELD

@@ -515,6 +515,9 @@ class HOUDINIENGINERUNTIME_API UHoudiniAssetInput : public UHoudiniAssetParamete
         /** Handler for landscape recommit button. **/
         FReply OnButtonClickRecommit();
 
+		/** Handler for landscape recommit button. **/
+		FReply OnButtonClickCommitManualMask();
+
         /** Start world outliner Actor transform monitor ticking. **/
         void StartWorldOutlinerTicking();
 
@@ -661,6 +664,8 @@ class HOUDINIENGINERUNTIME_API UHoudiniAssetInput : public UHoudiniAssetParamete
 
                 /** Indicates that the landscape input's source landscape should be updated instead of creating a new component **/
                 uint32 bUpdateInputLandscape : 1;
+
+				uint32 bLandscapeCommitManualMask : 1;
             };
 
             uint32 HoudiniAssetInputFlagsPacked;

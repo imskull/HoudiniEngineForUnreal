@@ -2976,6 +2976,23 @@ FHoudiniParameterDetails::CreateWidgetInput( IDetailCategoryBuilder & LocalDetai
                 .OnClicked( FOnClicked::CreateUObject( &InParam, &UHoudiniAssetInput::OnButtonClickRecommit ) )
             ]
         ];
+
+		// Button : Commit Manual Mask
+		VerticalBox->AddSlot().Padding(2, 2, 5, 2).AutoHeight()
+			[
+				SNew(SHorizontalBox)
+				+ SHorizontalBox::Slot()
+			.Padding(1, 2, 4, 2)
+			[
+				SNew(SButton)
+				.VAlign(VAlign_Center)
+			.HAlign(HAlign_Center)
+			.Text(LOCTEXT("LandscapeInputCommitManualMask", "Commit Manual Mask"))
+			.ToolTipText(LOCTEXT("LandscapeCommitManualMaskTooltip", "Commit painted region as manual mask"))
+			.OnClicked(FOnClicked::CreateUObject(&InParam, &UHoudiniAssetInput::OnButtonClickCommitManualMask))
+			]
+			];
+
     }
     else if ( InParam.ChoiceIndex == EHoudiniAssetInputType::WorldInput )
     {

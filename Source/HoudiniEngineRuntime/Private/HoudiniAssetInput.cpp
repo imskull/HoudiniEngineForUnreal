@@ -844,7 +844,9 @@ UHoudiniAssetInput::UploadParameterValue()
                         bLandscapeExportSelectionOnly, bLandscapeExportCurves,
                         bLandscapeExportMaterials, bLandscapeExportAsMesh, bLandscapeExportLighting,
                         bLandscapeExportNormalizedUVs, bLandscapeExportTileUVs, Bounds,
-                        bLandscapeExportAsHeightfield, bLandscapeAutoSelectComponent ) )
+                        bLandscapeExportAsHeightfield, bLandscapeAutoSelectComponent,
+						bLandscapeCommitManualMask
+					) )
                 {
                     bChanged = false;
                     ConnectedAssetId = -1;
@@ -2919,6 +2921,17 @@ UHoudiniAssetInput::OnButtonClickRecommit()
     MarkChanged();
 
     return FReply::Handled();
+}
+
+FReply
+UHoudiniAssetInput::OnButtonClickCommitManualMask()
+{
+	bLandscapeCommitManualMask = true;
+
+	// There's no undo operation for button.
+	MarkChanged();
+
+	return FReply::Handled();
 }
 
 void

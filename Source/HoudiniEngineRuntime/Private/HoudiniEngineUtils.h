@@ -317,7 +317,7 @@ struct HOUDINIENGINERUNTIME_API FHoudiniEngineUtils
             const bool& bExportOnlySelected, const bool& bExportCurves, const bool& bExportMaterials,
             const bool& bExportAsMesh, const bool& bExportLighting, const bool& bExportNormalizedUVs,
             const bool& bExportTileUVs, const FBox& AssetBounds, const bool& bExportAsHeightfield,
-            const bool& bAutoSelectComponents );
+            const bool& bAutoSelectComponents, const bool& bLandscapeCommitManualMask);
 
         /** HAPI : Marshaling, extract geometry and create input asset for it - return true on success **/
         static bool HapiCreateInputNodeForStaticMesh(

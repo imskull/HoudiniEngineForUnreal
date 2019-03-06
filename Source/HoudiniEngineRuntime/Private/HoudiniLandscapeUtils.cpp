@@ -1197,6 +1197,61 @@ FHoudiniLandscapeUtils::CreateHeightfieldFromLandscape(
             FHoudiniEngine::Get().GetSession(), MaskId ), false );
     }
 
+	//--------------------------------------------------------------------------------------------------
+	// EXPORT TO MANUAL MASK
+	//--------------------------------------------------------------------------------------------------
+	// if (bLandscapeCommitManualMask)
+	{
+		TArray<uint16> HeightData;
+		int32 XSize, YSize;
+		FVector Min, Max;
+		if (!GetLandscapeData(LandscapeProxy, HeightData, XSize, YSize, Min, Max))
+			return false;
+
+		// clear mask buffer
+		TArray<float> SelectedRegionData;
+		SelectedRegionData.Init(0.f, XSize*YSize);
+
+		// get mask region		
+		auto LandscapeInfo = LandscapeProxy->GetLandscapeInfo();
+		for (auto& SelectedPointPair : LandscapeInfo->SelectedRegion)
+		{
+			const FIntPoint Key = SelectedPointPair.Key;
+			// SelectedRegionData[Key.Y*XSize + Key.X] = SelectedPointPair.Value;
+			int32 nHoudini = Key.X*XSize + Key.Y;
+			SelectedRegionData[nHoudini] = SelectedPointPair.Value;
+		}
+
+
+		// upload mask
+		{
+			FString MaskName = "SelectedRegion";
+
+			HAPI_NodeId LayerVolumeNodeId;
+			FHoudiniApi::CreateHeightfieldInputVolumeNode(
+				FHoudiniEngine::Get().GetSession(),
+				HeightFieldId, &LayerVolumeNodeId, TCHAR_TO_UTF8(*MaskName), XSize, YSize, 1.0f);
+
+			// Set the heighfield data in Houdini
+			HAPI_PartId PartId = 0;
+			if (!SetHeighfieldData(LayerVolumeNodeId, PartId, SelectedRegionData, HeightfieldVolumeInfo, MaskName))
+				return false;
+
+			// Commit the volume's geo
+			HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::CommitGeo(
+				FHoudiniEngine::Get().GetSession(), LayerVolumeNodeId), false);
+
+			// We had to create a new volume for this layer, so we need to connect it to the HF's merge node
+			HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::ConnectNodeInput(
+				FHoudiniEngine::Get().GetSession(),
+				MergeId, MergeInputIndex, LayerVolumeNodeId, 0), false);
+
+			MergeInputIndex++;
+		}
+	}
+
+
+
     HAPI_TransformEuler HAPIObjectTransform;
     FMemory::Memzero< HAPI_TransformEuler >( HAPIObjectTransform );
     LandscapeTransform.SetScale3D(FVector::OneVector);    
