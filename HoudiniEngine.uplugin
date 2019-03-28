@@ -1,28 +1,27 @@
 {
-	"FileVersion" : 3,
-	"FriendlyName" : "Houdini Engine",
-	"Version" : 17000483,
-	"VersionName" : "17.0.483",
-	"CreatedBy" : "Side Effects Software Inc.",
-	"CreatedByURL" : "http://www.sidefx.com",
-	"DocsURL" : "http://www.sidefx.com/docs/unreal/",
-	"Description" : "Houdini Engine for Unreal Engine.",
-	"Category" : "Rendering",
-	"EnabledByDefault" : true,
+  "FileVersion": 3,
+  "FriendlyName": "Houdini Engine",
+  "Version": 17000506,
+  "VersionName": "17.0.506",
+  "CreatedBy": "Side Effects Software Inc.",
+  "CreatedByURL": "http://www.sidefx.com",
+  "DocsURL": "http://www.sidefx.com/docs/unreal/",
+  "Description": "Houdini Engine for Unreal Engine.",
+  "Category": "Rendering",
+  "EnabledByDefault": false,
 
-	"Modules" :
-	[
-		{
-			"Name" : "HoudiniEngineRuntime",
-			"Type" : "Runtime"
-		},
-		{
-			"Name" : "HoudiniEngineEditor",
-			"Type" : "Editor",
-			"LoadingPhase" : "PostEngineInit"
-		}
-	],
+  "Modules": [
+    {
+      "Name": "HoudiniEngineRuntime",
+      "Type": "Runtime"
+    },
+    {
+      "Name": "HoudiniEngineEditor",
+      "Type": "Editor",
+      "LoadingPhase": "PostEngineInit"
+    }
+  ],
 
-	"CanContainContent" : true,
-	"Installed": true
+  "CanContainContent": true,
+  "Installed": true
 }

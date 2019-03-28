@@ -32,9 +32,11 @@
 
 /*
 
-    Houdini Version: 17.0.483
+    Houdini Version: 17.0.506
     Houdini Engine Version: 3.2.36
-    Unreal Version: 4.20.3
+    Unreal Version: 4
+.20
+.3
 
 */
 
@@ -46,7 +48,7 @@ public class HoudiniEngineRuntime : ModuleRules
 {
     private string GetHFSPath()
     {
-        string HoudiniVersion = "17.0.483";
+        string HoudiniVersion = "17.0.506";
         bool bIsRelease = true;
         string HFSPath = "";
         string RegistryPath = "HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Side Effects Software";
@@ -203,37 +205,37 @@ public class HoudiniEngineRuntime : ModuleRules
         }
 
         // Find HFS
-        string HFSPath = GetHFSPath();
-        HFSPath = HFSPath.Replace("\\", "/");
+        //string HFSPath = GetHFSPath();
+        //HFSPath = HFSPath.Replace("\\", "/");
 
-        if( HFSPath != "" )
-        {
-            string Log = string.Format("Houdini Engine: Found Houdini in {0}", HFSPath );
-            System.Console.WriteLine( Log ); 
+        //if( HFSPath != "" )
+        //{
+        //    string Log = string.Format("Houdini Engine: Found Houdini in {0}", HFSPath );
+        //    System.Console.WriteLine( Log ); 
 
-            PlatformID buildPlatformId = Environment.OSVersion.Platform;
-            if (buildPlatformId == PlatformID.Win32NT)
-            {
-                PublicDefinitions.Add("HOUDINI_ENGINE_HFS_PATH_DEFINE=" + HFSPath);
-            }
-        }
+        //    PlatformID buildPlatformId = Environment.OSVersion.Platform;
+        //    if (buildPlatformId == PlatformID.Win32NT)
+        //    {
+        //        PublicDefinitions.Add("HOUDINI_ENGINE_HFS_PATH_DEFINE=" + HFSPath);
+        //    }
+        //}
 
-        // Find the HAPI include directory
-        string HAPIIncludePath = HFSPath + "/toolkit/include/HAPI";
-        if (!Directory.Exists(HAPIIncludePath))
-        {
-            // Add the custom include path as well in case the toolkit path doesn't exist yet.
-            HAPIIncludePath = HFSPath + "/custom/houdini/include/HAPI";
+        //// Find the HAPI include directory
+        //string HAPIIncludePath = HFSPath + "/toolkit/include/HAPI";
+        //if (!Directory.Exists(HAPIIncludePath))
+        //{
+        //    // Add the custom include path as well in case the toolkit path doesn't exist yet.
+        //    HAPIIncludePath = HFSPath + "/custom/houdini/include/HAPI";
 
-            if (!Directory.Exists(HAPIIncludePath))
-            {
-                System.Console.WriteLine(string.Format("Couldn't find the HAPI include folder!"));
-                HAPIIncludePath = "";
-            }
-        }
+        //    if (!Directory.Exists(HAPIIncludePath))
+        //    {
+        //        System.Console.WriteLine(string.Format("Couldn't find the HAPI include folder!"));
+        //        HAPIIncludePath = "";
+        //    }
+        //}
 
-        if (HAPIIncludePath != "")
-            PublicIncludePaths.Add(HAPIIncludePath);
+        //if (HAPIIncludePath != "")
+        //    PublicIncludePaths.Add(HAPIIncludePath);
 
         PublicIncludePaths.AddRange(
             new string[] {
