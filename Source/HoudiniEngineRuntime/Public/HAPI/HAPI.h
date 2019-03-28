@@ -3,6 +3,13 @@
  * Side Effects Software Inc., and is not to be reproduced,
  * transmitted, or disclosed in any way without written permission.
  *
+ * Produced by:
+ *      Side Effects Software Inc
+ *      123 Front Street West, Suite 1401
+ *      Toronto, Ontario
+ *      Canada   M5J 2M2
+ *      416-504-9876
+ *
  * COMMENTS:
  * For parsing help, there is a variable naming convention we maintain:
  *      strings:            char * and does not end in "buffer"
@@ -822,6 +829,40 @@ HAPI_DECL HAPI_GetString( const HAPI_Session * session,
                           HAPI_StringHandle string_handle,
                           char * string_value,
                           int length );
+
+/// @brief  Adds the given string to the string table and returns 
+///         the handle. It is the responsibility of the caller to
+///         manage access to the string. The intended use for custom strings
+///         is to allow structs that reference strings to be passed in to HAPI
+///
+/// @param[in]      session
+///                 The session of Houdini you are interacting with.
+///                 See @ref HAPI_Sessions for more on sessions.
+///                 Pass NULL to just use the default in-process session.
+///
+/// @param[in]      string_value
+///                 Actual string value (character array).
+///
+/// @param[out]     handle_value
+///                 Handle of the string that was added
+///
+HAPI_DECL HAPI_SetCustomString( const HAPI_Session * session,
+                          const char * string_value,
+                          int *handle_value);
+
+/// @brief  Removes the specified string from the server
+///         and invalidates the handle
+///
+/// @param[in]      session
+///                 The session of Houdini you are interacting with.
+///                 See @ref HAPI_Sessions for more on sessions.
+///                 Pass NULL to just use the default in-process session.
+///
+/// @param[in]     string_handle
+///                 Handle of the string that was added
+///
+HAPI_DECL HAPI_RemoveCustomString( const HAPI_Session * session,
+                          const int string_handle);
 
 /// @brief  Gives back the length of the buffer needed to hold
 ///         all the values null-separated for the given string 
