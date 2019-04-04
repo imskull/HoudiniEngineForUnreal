@@ -3535,8 +3535,12 @@ bool FHoudiniLandscapeUtils::CreateLandscapeLayers(
             continue;
 
         // No need to create flat layers as Unreal will remove them afterwards..
-        if ( LayerMin == LayerMax )
-            continue;
+		if (LayerMin == LayerMax)
+		{
+			HOUDINI_LOG_WARNING(TEXT("LayerMin == LayerMax, No need to create flat layers as Unreal will remove them afterwards."));
+
+			continue;
+		}
 
         // Get the layer's name
         FString LayerString;
