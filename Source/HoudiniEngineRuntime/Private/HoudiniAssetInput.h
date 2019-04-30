@@ -665,6 +665,11 @@ class HOUDINIENGINERUNTIME_API UHoudiniAssetInput : public UHoudiniAssetParamete
 
             uint32 HoudiniAssetInputFlagsPacked;
         };
+
+	public:
+		UObject* PW_GetInputObject(int32 AtIndex) const {
+			return GetInputObject(AtIndex);
+		}
 };
 
 /** Serialization function. **/

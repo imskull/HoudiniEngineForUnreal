@@ -1465,6 +1465,67 @@ UHoudiniAssetComponent::PostCook( bool bCookError )
             DownstreamAsset->NotifyParameterChanged( nullptr );
         }
     }
+
+	// pw-houdini-engine: bake snow
+	// if (FHoudiniEngineUtils::HapiCheckAttributeExists(GetAssetId(), "pw_update_vertex_color_g", HAPI_ATTROWNER_DETAIL))
+	{
+		// Update vertex colors to original meshes
+		do {
+			// StaticMeshes[0][1] -> Inputs[0].InputObjects[0]
+
+			if (!Inputs.Num() || !StaticMeshes.Num())
+				break;
+
+			UHoudiniAssetInput *AssertInput = Inputs[0];
+			UStaticMesh *ToMesh = Cast<UStaticMesh>(AssertInput->PW_GetInputObject(0));
+			if (!ToMesh)
+				break;
+
+			UStaticMesh * FromMesh = nullptr;
+			FHoudiniGeoPartObject *HoudiniGeoPartObject = nullptr;
+			for (TMap< FHoudiniGeoPartObject, UStaticMesh * >::TIterator Iter(StaticMeshes); Iter; ++Iter)
+			{
+				HoudiniGeoPartObject = &Iter.Key();
+				FromMesh = Iter.Value();
+				if (FromMesh)
+					break;
+			}
+			if (!FromMesh || !HoudiniGeoPartObject->HapiCheckAttributeExistance("pw_update_vertex_color_g", HAPI_ATTROWNER_DETAIL))
+				break;
+
+			TMap<FVector, FColor> BakedVertexColorData;
+			FromMesh->GetVertexColorData(BakedVertexColorData);
+
+			TMap<FVector, FColor> NewVertexColorData;
+			ToMesh->GetVertexColorData(NewVertexColorData);
+
+			if (BakedVertexColorData.Num() != NewVertexColorData.Num())
+				break;
+
+			TMap< FVector, FColor >::TIterator Iter(NewVertexColorData);
+			TMap< FVector, FColor >::TIterator IterBaked(BakedVertexColorData);
+			for (; Iter; ++Iter, ++IterBaked)
+			{
+				FColor &MeshClr = Iter.Value();
+
+				//// B - manually painted snow mask, will combined with baked mask.
+				//MeshClr.G = (uint8)(IterBaked.Value().G * (1.f - MeshClr.B/255.f));
+				MeshClr.G = IterBaked.Value().G;
+			}
+
+			ToMesh->Modify();
+			ToMesh->SetVertexColorData(NewVertexColorData);
+			ToMesh->Build();
+
+			UStaticMeshComponent * Comp = LocateStaticMeshComponent(FromMesh);
+			if (Comp)
+			{
+				UStaticMesh *Placeholder = Cast<UStaticMesh>(StaticLoadObject(UStaticMesh::StaticClass(), nullptr, TEXT("StaticMesh'/Engine/EngineMeshes/SM_MatPreviewMesh_01.SM_MatPreviewMesh_01'")));
+				Comp->SetStaticMesh(Placeholder);
+			}
+
+		} while (0);
+	}
 }
 
 void

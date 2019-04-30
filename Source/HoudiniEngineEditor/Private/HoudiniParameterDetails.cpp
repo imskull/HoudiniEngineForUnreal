@@ -2368,6 +2368,11 @@ FHoudiniParameterDetails::Helper_OnButtonClickSelectActors(
             if (InParam->GetHoudiniAssetComponent() && (Actor == InParam->GetHoudiniAssetComponent()->GetOwner()))
                 continue;
 
+			//// Filter by tags
+			//FName TargetTag("TerrainSnowOccluder");
+			//if (!Actor->ActorHasTag(TargetTag))
+			//	continue;
+
             InParam->UpdateInputOulinerArrayFromActor(Actor, false);
         }
     }

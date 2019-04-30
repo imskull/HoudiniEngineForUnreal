@@ -53,6 +53,7 @@
     #include "PackedNormal.h"
     #include "Widgets/Notifications/SNotificationList.h"
     #include "Framework/Notifications/NotificationManager.h"
+	#include "InstancedFoliageActor.h"
 #endif
 
 #include "EngineUtils.h"
@@ -2462,6 +2463,181 @@ FHoudiniEngineUtils::HapiCreateInputNodeForLandscape(
             // Each selected landscape component will be exported as separate volumes in a single heightfield
             bSuccess = FHoudiniLandscapeUtils::CreateHeightfieldFromLandscapeComponentArray( LandscapeProxy, SelectedComponents, CreatedHeightfieldNodeId );
         }
+
+		// EXPORT FOLIAGES AS POINTS
+		if (0)
+		// if (bSuccess)
+		{
+			UWorld *CurWorld = LandscapeProxy->GetWorld();
+			ULevel* DesiredLevel = CurWorld->GetCurrentLevel();
+
+			TArray<float> ExpPoints;
+			ExpPoints.Empty(1000);
+
+			std::vector<std::string> MeshRefStrings;
+			MeshRefStrings.reserve(1000);
+
+			int MeshIdx = 0;
+			int PointIdx = 0;
+
+			// Go through all FoliageActors in the world, since we support cross-level bases
+			for (TActorIterator<AInstancedFoliageActor> It(CurWorld); It; ++It)
+			{
+				AInstancedFoliageActor* IFA = *It;
+				if (IFA->IsPendingKill())
+					continue;
+
+				// AInstancedFoliageActor* InstancedFoliageActor = AInstancedFoliageActor::GetInstancedFoliageActorForLevel(DesiredLevel, false);
+				//USceneComponent *ActorComponent = IFA->GetRootComponent();
+				//auto FoliageInstanceMap = IFA->GetInstancesForComponent(ActorComponent);
+				//for (const auto& MapEntry : FoliageInstanceMap)
+				//{
+				//	for (const FFoliageInstancePlacementInfo* Inst : MapEntry.Value)
+				//	{
+				//		//Ar.Logf(TEXT("%sLocation=%f,%f,%f Rotation=%f,%f,%f PreAlignRotation=%f,%f,%f DrawScale3D=%f,%f,%f Flags=%u%s"), FCString::Spc(TextIndent + 3),
+				//		//	Inst->Location.X, Inst->Location.Y, Inst->Location.Z,
+				//		//	Inst->Rotation.Pitch, Inst->Rotation.Yaw, Inst->Rotation.Roll,
+				//		//	Inst->PreAlignRotation.Pitch, Inst->PreAlignRotation.Yaw, Inst->PreAlignRotation.Roll,
+				//		//	Inst->DrawScale3D.X, Inst->DrawScale3D.Y, Inst->DrawScale3D.Z,
+				//		//	Inst->Flags,
+				//		//	LINE_TERMINATOR);
+				//	}
+				//}
+
+				for (auto& MeshPair : IFA->FoliageMeshes)
+				{
+					const FFoliageMeshInfo& MeshInfo = *MeshPair.Value;
+					UHierarchicalInstancedStaticMeshComponent* MeshComponent = MeshInfo.Component;
+					if (!MeshComponent)
+					{
+						MeshIdx++;
+						continue;
+					}
+
+					TArray<FInstancedStaticMeshInstanceData> MeshDataArray = MeshComponent->PerInstanceSMData;
+					if (!MeshDataArray.Num())
+						continue;
+
+					UStaticMesh *StaticMesh = MeshComponent->GetStaticMesh();
+					// FString MeshName = MeshComponent->GetStaticMesh()->GetName();
+
+					FStringAssetReference ThePath = FStringAssetReference(StaticMesh);
+					FString MeshRefString = ThePath.ToString();
+
+					for (auto& MeshMatrix : MeshDataArray)
+					{
+						MeshRefStrings.push_back(std::string("StaticMesh'") + std::string(TCHAR_TO_UTF8(*MeshRefString)) + "'");
+
+						FTransform MeshTransform = FTransform(MeshMatrix.Transform);
+						FVector Loc = MeshTransform.GetLocation();
+
+						static const float GeneratedGeometryScaleFactor = HAPI_UNREAL_SCALE_FACTOR_POSITION;
+						static const FVector BuildScaleVector(1, 1, 1);
+
+						// HRSAI_Unreal
+						ExpPoints.Add(Loc.X / GeneratedGeometryScaleFactor * BuildScaleVector.X);
+						ExpPoints.Add(Loc.Z / GeneratedGeometryScaleFactor * BuildScaleVector.Z);
+						ExpPoints.Add(Loc.Y / GeneratedGeometryScaleFactor * BuildScaleVector.Y);
+
+						PointIdx++;
+					}
+
+					MeshIdx++;
+				}
+			}
+
+			// Exported data are ready, commit all points
+			int NumPoints = PointIdx;
+			if (!NumPoints)
+			{
+				HOUDINI_LOG_WARNING(TEXT("Did not find any foliage to be commit!"));
+			}
+			else
+			{
+				HAPI_PartInfo Part;
+				FMemory::Memzero< HAPI_PartInfo >(Part);
+				Part.id = 0;
+				Part.nameSH = 0;
+				Part.attributeCounts[HAPI_ATTROWNER_POINT] = 0;
+				Part.attributeCounts[HAPI_ATTROWNER_PRIM] = 0;
+				Part.attributeCounts[HAPI_ATTROWNER_VERTEX] = 0;
+				Part.attributeCounts[HAPI_ATTROWNER_DETAIL] = 0;
+				Part.vertexCount = 0;
+				Part.faceCount = 0;
+				Part.pointCount = NumPoints;
+				Part.type = HAPI_PARTTYPE_MESH;
+
+				// Set the part infos
+				HAPI_GeoInfo DisplayGeoInfo;
+				HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::GetDisplayGeoInfo(
+					FHoudiniEngine::Get().GetSession(), CreatedHeightfieldNodeId, &DisplayGeoInfo), false);
+
+				Part.id = DisplayGeoInfo.partCount + 1;
+				HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::SetPartInfo(
+					FHoudiniEngine::Get().GetSession(), DisplayGeoInfo.nodeId, 0, &Part), false);
+
+				{
+
+					HAPI_NodeId NodeId = DisplayGeoInfo.nodeId;
+
+					// Create point attribute info containing positions.    
+					{
+						HAPI_AttributeInfo AttributeInfoPointPosition;
+						FMemory::Memzero< HAPI_AttributeInfo >(AttributeInfoPointPosition);
+						AttributeInfoPointPosition.count = NumPoints;
+						AttributeInfoPointPosition.tupleSize = 3;
+						AttributeInfoPointPosition.exists = true;
+						AttributeInfoPointPosition.owner = HAPI_ATTROWNER_POINT;
+						AttributeInfoPointPosition.storage = HAPI_STORAGETYPE_FLOAT;
+						AttributeInfoPointPosition.originalOwner = HAPI_ATTROWNER_INVALID;
+
+						HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::AddAttribute(
+							FHoudiniEngine::Get().GetSession(), NodeId, 0,
+							HAPI_UNREAL_ATTRIB_POSITION, &AttributeInfoPointPosition), false);
+
+						HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::SetAttributeFloatData(
+							FHoudiniEngine::Get().GetSession(), NodeId, 0,
+							HAPI_UNREAL_ATTRIB_POSITION, &AttributeInfoPointPosition,
+							(const float *)ExpPoints.GetData(),
+							0, NumPoints), false);
+					}
+
+					// Add mesh ref string
+					{
+						TArray<const char*> ExpRefStrings;
+						ExpRefStrings.SetNumZeroed(MeshRefStrings.size());
+						for (int i = 0; i < MeshRefStrings.size(); ++i)
+							ExpRefStrings[i] = MeshRefStrings[i].c_str();
+
+						HAPI_AttributeInfo AttributeInfoRefMesh;
+						FMemory::Memzero< HAPI_AttributeInfo >(AttributeInfoRefMesh);
+						AttributeInfoRefMesh.count = NumPoints;
+						AttributeInfoRefMesh.tupleSize = 1;
+						AttributeInfoRefMesh.exists = true;
+						AttributeInfoRefMesh.owner = HAPI_ATTROWNER_POINT;
+						AttributeInfoRefMesh.storage = HAPI_STORAGETYPE_STRING;
+						AttributeInfoRefMesh.originalOwner = HAPI_ATTROWNER_INVALID;
+
+						HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::AddAttribute(
+							FHoudiniEngine::Get().GetSession(), NodeId, 0,
+							HAPI_UNREAL_ATTRIB_INSTANCE_OVERRIDE, &AttributeInfoRefMesh), false);
+
+						HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::SetAttributeStringData(
+							FHoudiniEngine::Get().GetSession(), NodeId, 0,
+							HAPI_UNREAL_ATTRIB_INSTANCE_OVERRIDE, &AttributeInfoRefMesh,
+							ExpRefStrings.GetData(), 0, NumPoints), false);
+					}
+				}
+
+				// @FIX heightfield was overwritten.
+				HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::CommitGeo(
+					FHoudiniEngine::Get().GetSession(), DisplayGeoInfo.nodeId), false);
+
+				//// Finally, cook the Heightfield node
+				//HOUDINI_CHECK_ERROR_RETURN(FHoudiniApi::CookNode(
+				//	FHoudiniEngine::Get().GetSession(), DisplayGeoInfo.nodeId, nullptr), false);
+			}
+		}
 
         // Add the Heightfield's parent OBJ node to the created nodes
         OutCreatedNodeIds.AddUnique( FHoudiniEngineUtils::HapiGetParentNodeId( CreatedHeightfieldNodeId ) );
